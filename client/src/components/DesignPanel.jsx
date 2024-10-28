@@ -45,10 +45,12 @@ const FontList = () => {
 
 const DesignPage = () => {
   const [texts, setTexts] = useState([]); // Store multiple text objects
+  console.log(texts)
   const [textOptions, setTextOptions] = useState({
     text: "Your Text Here",
     color: "#000000",
     fontSize: 24,
+    align: "center",
     fontFamily: "Arial",
     fontWeight: "normal",
     width: 200, // Default width for wrapping
@@ -82,6 +84,11 @@ const DesignPage = () => {
     setTextOptions((prev) => ({ ...prev, [name]: value }));
   };
 
+  useEffect(() => {
+    setTexts((prev) =>
+      prev.map((t) => (t.id === selectedId   ? { ...t, ...textOptions } : t))
+    );
+  }, [textOptions]);
 
   // Add new text to the canvas
   const addText = () => {
@@ -95,6 +102,7 @@ const DesignPage = () => {
       },
     ]);
     setTextOptions({
+      align: "center",
       text: "Your Text Here",
       color: "#000000",
       fontSize: 24,
@@ -141,8 +149,17 @@ const DesignPage = () => {
     setTexts((prev) => prev.map((t) => (t.id === id ? { ...t, x, y } : t)));
   };
 
-  const handleSelect = (id) => {
-    setSelectedId(id);
+  const handleSelect = (selectedText) => {
+    setTextOptions({
+      text: selectedText.text,
+      width: selectedText.width,
+      height: selectedText.height,
+      fontFamily: selectedText.fontFamily,
+      fontSize: selectedText.fontSize,
+      color: selectedText.color,
+      fontWeight: selectedText.fontWeight,
+    });
+    setSelectedId(selectedText.id);
   };
 
   const handleTransformEnd = (e, id) => {
@@ -206,6 +223,17 @@ const DesignPage = () => {
           className="w-full p-2 border rounded"
         />
 
+        <label>Text Align:</label>
+        <select
+          name="align"
+          value={textOptions.align}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+        >
+          <option value="center">Center</option>
+          <option value="left">Left</option>
+        </select>
+
         <label>Font Family:</label>
         <select
           name="fontFamily"
@@ -243,7 +271,9 @@ const DesignPage = () => {
           {texts.map((text) => (
             <li
               key={text.id}
-              onClick={()=>{handleSelect(text.id)}}
+              onClick={() => {
+                handleSelect(text);
+              }}
               className={`flex justify-between items-center p-2 border rounded ${
                 selectedId === text.id && "border-red-800"
               }`}
@@ -293,8 +323,8 @@ const DesignPage = () => {
             {/* Render all added text elements */}
             {texts.map((text) => (
               <Text
-                verticalAlign="center"
-                // textDecoration="dotted"
+                verticalAlign="left"
+                align={text.align}
                 key={text.id}
                 id={text.id.toString()}
                 text={text.text}
@@ -307,9 +337,8 @@ const DesignPage = () => {
                 y={text.y}
                 height={text.height}
                 width={text.width}
-                align="left"
-                onClick={() => handleSelect(text.id)}
-                onTap={() => handleSelect(text.id)}
+                onClick={() => handleSelect(text)}
+                onTap={() => handleSelect(text)}
                 onDragEnd={(e) => handleDragEnd(e, text.id)} // Handle drag end event
                 onTransformEnd={(e) => handleTransformEnd(e, text.id)} // Handle transform end event
               />
