@@ -1,20 +1,83 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Stage, Layer, Text, Image as KonvaImage, Transformer } from "react-konva";
-import useImage from "use-image";
+import {
+  Stage,
+  Layer,
+  Text,
+  Image as KonvaImage,
+  Transformer,
+} from "react-konva";
 import { jsPDF } from "jspdf";
-import data from "../data/templateData.json";
 
 const DesignViewPanel = () => {
-  const [texts, setTexts] = useState(data); // Store multiple text objects
+  const [texts, setTexts] = useState([]);
   const stageRef = useRef();
+  const [background, setBackground] = useState();
   const transformerRef = useRef();
-  const [image] = useImage("/templatess.png");
+  const [image, setImage] = useState(null);
   const [imageDimensions, setImageDimensions] = useState({
     width: 0,
     height: 0,
   });
 
-  // Set canvas stage size according to image's aspect ratio
+  const fetchCertificate = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/design/retrieve");
+      const data = await response.json();
+
+      // Set the texts from the response
+      setTexts(data.texts);
+
+      // Handle the file URL and the image object
+      const file = data.image; // Assuming this is the URL of the image
+      const imageObj = data.imageObj; // The object containing base64 image data
+
+      // If the file URL is available
+      if (file) {
+        const img = new Image();
+        img.src = file; // Set the image source to the file URL
+        img.onload = () => {
+          // setImage(img); // Update the image state with the loaded image
+          const url = file.split("/").pop(); // Get the image file name
+          setBackground(url); // Set background to the image name
+          console.log(file);
+        };
+      }
+
+      // If the image object exists
+      if (imageObj) {
+        const { content, type } = imageObj;
+
+        // Convert base64 to Blob
+        const byteCharacters = atob(content); // Decode base64 string
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+
+        // Create a Blob from the byte array
+        const blob = new Blob([byteArray], { type });
+        // Create a File object from the Blob
+        const file = new File([blob], "downloaded-image.png", { type });
+        if (file) {
+          setBackground(file);
+          const image = new Image();
+          image.src = URL.createObjectURL(file);
+          setImage(image); // Assuming setImage is a hook to store the image
+        }
+        // Optionally, set the File object to a state if needed
+        // setImageFile(fileObj); // Uncomment if you need to store the file object
+      }
+    } catch (error) {
+      console.error("Error retrieving data:", error);
+      alert("Failed To Retrieve");
+    }
+  };
+
+  useEffect(() => {
+    fetchCertificate();
+  }, []);
+
   useEffect(() => {
     if (image) {
       const aspectRatio = 2560 / 1810;
@@ -26,9 +89,9 @@ const DesignViewPanel = () => {
     }
   }, [image]);
 
-  // Function to download the stage as a PDF
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     const stage = stageRef.current;
+
     const pdf = new jsPDF({
       orientation: "landscape",
       unit: "px",
@@ -39,14 +102,13 @@ const DesignViewPanel = () => {
       mimeType: "image/png",
       callback: (dataUrl) => {
         pdf.addImage(dataUrl, "PNG", 0, 0, stage.width(), stage.height());
-        pdf.save("stage.pdf");
+        pdf.save("certificate.pdf");
       },
     });
   };
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Canvas Panel */}
       <div className="flex-1 flex justify-center items-center bg-gray-200">
         <Stage
           ref={stageRef}
@@ -55,17 +117,15 @@ const DesignViewPanel = () => {
           style={{ border: "1px solid #ddd", backgroundColor: "white" }}
         >
           <Layer>
-            {/* Background Template Image */}
             <KonvaImage
               image={image}
               width={imageDimensions.width}
               height={imageDimensions.height}
             />
 
-            {/* Render all added text elements */}
             {texts.map((text) => (
               <Text
-                verticalAlign="left"
+                verticalAlign={text.verticalAlign}
                 align={text.align}
                 key={text.id}
                 id={text.id.toString()}
@@ -90,7 +150,6 @@ const DesignViewPanel = () => {
         </Stage>
       </div>
 
-      {/* Download Button */}
       <div className="p-4">
         <button
           onClick={downloadPDF}

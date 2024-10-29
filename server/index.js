@@ -2,17 +2,22 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const csv = require("csv-parser");
-const { csvToJson } = require("./functions/csvToJsonConverter");
+const cors = require("cors");
 const dotenv = require("dotenv");
+const { csvToJson } = require("./functions/csvToJsonConverter");
 const { generateDataFrame } = require("./functions/generateDataFrame");
-const json = require("./tempdata.json");
-const upload = multer({ dest: "uploads/" });
+
 dotenv.config();
 
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
+app.use(express.json());
+app.use(cors());
+
 const PORT = process.env.PORT || 5000;
+
+// Set up multer for CSV file uploads
+const upload = multer({ dest: "/documents/" });
 
 // POST route to handle CSV file upload and conversion
 app.post("/convert-csv", upload.single("file"), async (req, res) => {
@@ -24,25 +29,29 @@ app.post("/convert-csv", upload.single("file"), async (req, res) => {
 
     // Call csvToJson function with the uploaded file path
     const jsonResult = await csvToJson(req.file.path);
-    console.log("Json Result", jsonResult);
     const jsonDataFrame = generateDataFrame(jsonResult);
     const rowDf = jsonDataFrame.getRows();
-    console.log("JSonDataFrame", jsonDataFrame);
+
     // Delete the file after processing
     fs.unlinkSync(req.file.path);
 
     // Send JSON result as response
-    res.json({ dataFrame: rowDf , keys:jsonDataFrame.keys });
+    res.json({ dataFrame: rowDf, keys: jsonDataFrame.keys });
   } catch (error) {
-    console.error("", error);
+    console.error("Error in CSV conversion:", error);
     res.status(500).json({ error: "Failed to convert CSV to JSON" });
   }
 });
 
-app.get("/", async (req, res) => {
-  res.send("Server Active")
+// Use design route for template handling
+app.use("/design", require("./routes/templateRoute"));
+
+// Root route to check server status
+app.get("/", (req, res) => {
+  res.send("Server Active");
 });
 
+app.use("/", require("./routes/image")); // Use the image route at the base URL
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

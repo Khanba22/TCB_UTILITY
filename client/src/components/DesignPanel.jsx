@@ -6,46 +6,53 @@ import {
   Image as KonvaImage,
   Transformer,
 } from "react-konva";
-import useImage from "use-image";
 
 const FontList = () => {
+  const fonts = [
+    "Arial",
+    "Arial Black",
+    "Comic Sans MS",
+    "Courier New",
+    "Georgia",
+    "Garamond",
+    "Helvetica",
+    "Impact",
+    "Lucida Console",
+    "Monaco",
+    "Open Sans",
+    "Roboto",
+    "Tahoma",
+    "Times New Roman",
+    "Trebuchet MS",
+    "Verdana",
+    "Webdings",
+    "Wingdings",
+    "Segoe UI",
+    "Arial Unicode MS",
+    "Calibri",
+    "Cambria",
+    "Frank Ruhl Libre",
+    "Poppins",
+    "Montserrat",
+    "Lora",
+    "Droid Sans",
+  ];
+
   return (
     <>
-      <option value="Arial">Arial</option>
-      <option value="Arial Black">Arial Black</option>
-      <option value="Comic Sans MS">Comic Sans MS</option>
-      <option value="Courier New">Courier New</option>
-      <option value="Georgia">Georgia</option>
-      <option value="Garamond">Garamond</option>
-      <option value="Helvetica">Helvetica</option>
-      <option value="Impact">Impact</option>
-      <option value="Lucida Console">Lucida Console</option>
-      <option value="Monaco">Monaco</option>
-      <option value="Open Sans">Open Sans</option>
-      <option value="Roboto">Roboto</option>
-      <option value="Tahoma">Tahoma</option>
-      <option value="Times New Roman">Times New Roman</option>
-      <option value="Trebuchet MS">Trebuchet MS</option>
-      <option value="Verdana">Verdana</option>
-      <option value="Webdings">Webdings</option>
-      <option value="Wingdings">Wingdings</option>
-      <option value="Segoe UI">Segoe UI</option>
-      <option value="Arial Unicode MS">Arial Unicode MS</option>
-      <option value="Calibri">Calibri</option>
-      <option value="Cambria">Cambria</option>
-      <option value="Georgia">Georgia</option>
-      <option value="Frank Ruhl Libre">Frank Ruhl Libre</option>
-      <option value="Poppins">Poppins</option>
-      <option value="Montserrat">Montserrat</option>
-      <option value="Lora">Lora</option>
-      <option value="Droid Sans">Droid Sans</option>
+      {fonts.map((font) => (
+        <option key={font} value={font}>
+          {font}
+        </option>
+      ))}
     </>
   );
 };
 
 const DesignPage = () => {
   const [texts, setTexts] = useState([]); // Store multiple text objects
-  console.log(texts)
+  const [image, setImage] = useState(null);
+  const [background, setBackground] = useState(null);
   const [textOptions, setTextOptions] = useState({
     text: "Your Text Here",
     color: "#000000",
@@ -53,6 +60,7 @@ const DesignPage = () => {
     align: "center",
     fontFamily: "Arial",
     fontWeight: "normal",
+    verticalAlign: "middle",
     width: 200, // Default width for wrapping
     height: 50,
   });
@@ -60,7 +68,6 @@ const DesignPage = () => {
 
   const stageRef = useRef();
   const transformerRef = useRef();
-  const [image] = useImage("/templatess.png");
   const [imageDimensions, setImageDimensions] = useState({
     width: 0,
     height: 0,
@@ -69,12 +76,21 @@ const DesignPage = () => {
   // Set canvas stage size according to image's aspect ratio
   useEffect(() => {
     if (image) {
-      const aspectRatio = 2560 / 1810;
-      const screenHeight = window.innerHeight * (5 / 6);
-      setImageDimensions({
-        width: screenHeight * aspectRatio,
-        height: screenHeight,
-      });
+      if (image.naturalHeight > image.naturalWidth) {
+        const aspectRatio = 1 / 1.414;
+        const screenHeight = window.innerHeight * (5 / 6);
+        setImageDimensions({
+          width: screenHeight * aspectRatio,
+          height: screenHeight,
+        });
+      } else {
+        const aspectRatio = 2560 / 1810;
+        const screenHeight = window.innerHeight * (5 / 6);
+        setImageDimensions({
+          width: screenHeight * aspectRatio,
+          height: screenHeight,
+        });
+      }
     }
   }, [image]);
 
@@ -86,24 +102,27 @@ const DesignPage = () => {
 
   useEffect(() => {
     setTexts((prev) =>
-      prev.map((t) => (t.id === selectedId   ? { ...t, ...textOptions } : t))
+      prev.map((t) => (t.id === selectedId ? { ...t, ...textOptions } : t))
     );
   }, [textOptions]);
 
   // Add new text to the canvas
   const addText = () => {
+    const id = Date.now();
     setTexts((prev) => [
       ...prev,
       {
-        id: Date.now(), // Unique ID for each text
+        id: id, // Unique ID for each text
         ...textOptions,
         x: imageDimensions.width / 2,
         y: imageDimensions.height / 2,
       },
     ]);
+    setSelectedId(id);
     setTextOptions({
       align: "center",
       text: "Your Text Here",
+      verticalAlign: "middle",
       color: "#000000",
       fontSize: 24,
       fontFamily: "Arial",
@@ -153,6 +172,7 @@ const DesignPage = () => {
     setTextOptions({
       text: selectedText.text,
       width: selectedText.width,
+      align: selectedText.align,
       height: selectedText.height,
       fontFamily: selectedText.fontFamily,
       fontSize: selectedText.fontSize,
@@ -190,11 +210,51 @@ const DesignPage = () => {
     node.scaleY(1);
   };
 
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBackground(file);
+      const image = new Image();
+      image.src = URL.createObjectURL(file);
+      setImage(image); // Assuming setImage is a hook to store the image
+    }
+  };
+
+  const handleUpload = async (event) => {
+    event.preventDefault(); // Prevent default form submission
+
+    const formData = new FormData();
+    formData.append("texts", JSON.stringify(texts));
+    formData.append("image", background);
+
+    try {
+      const response = await fetch("http://localhost:4000/design/store", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+      alert("Upload Successful");
+    } catch (error) {
+      console.error("Error uploading data:", error);
+      alert("Error uploading the Data");
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="w-1/4 p-4 bg-white shadow-lg space-y-4">
         <h2 className="text-lg font-semibold">Text Options</h2>
+
+        <label>Background:</label>
+        <input
+          type="file"
+          accept="image/*"
+          name="background"
+          onChange={handleFile}
+          className="w-full p-2 border rounded"
+        />
 
         <input
           type="text"
@@ -232,6 +292,18 @@ const DesignPage = () => {
         >
           <option value="center">Center</option>
           <option value="left">Left</option>
+          <option value="right">Right</option>
+        </select>
+        <label>Vertical Align:</label>
+        <select
+          name="verticalAlign"
+          value={textOptions.verticalAlign}
+          onChange={handleChange}
+          className="w-full p-2 border rounded"
+        >
+          <option value="middle">Middle</option>
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
         </select>
 
         <label>Font Family:</label>
@@ -299,7 +371,7 @@ const DesignPage = () => {
       </div>
 
       {/* Canvas Panel */}
-      <div className="flex-1 flex justify-center items-center bg-gray-200">
+      <div className="flex-1 flex flex-col justify-center items-center bg-gray-200">
         <Stage
           ref={stageRef}
           width={imageDimensions.width}
@@ -323,7 +395,7 @@ const DesignPage = () => {
             {/* Render all added text elements */}
             {texts.map((text) => (
               <Text
-                verticalAlign="left"
+                verticalAlign={text.verticalAlign}
                 align={text.align}
                 key={text.id}
                 id={text.id.toString()}
@@ -353,6 +425,12 @@ const DesignPage = () => {
             />
           </Layer>
         </Stage>
+        <button
+          onClick={handleUpload}
+          className="w-1/6 my-3 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Save
+        </button>
       </div>
     </div>
   );

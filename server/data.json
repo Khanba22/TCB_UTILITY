@@ -1,0 +1,53 @@
+{
+  "texts": [
+    {
+      "id": 1730204669615,
+      "text": "Suyog Parkhi",
+      "color": "#40bfb9",
+      "fontSize": "54",
+      "align": "center",
+      "fontFamily": "Comic Sans MS",
+      "fontWeight": "normal",
+      "verticalAlign": "middle",
+      "width": 536.0612768822863,
+      "height": 59.005714285714085,
+      "x": 282.8561075095352,
+      "y": 324.70619047618936,
+      "scaleX": 1,
+      "scaleY": 1
+    },
+    {
+      "id": 1730204697089,
+      "align": "left",
+      "text": "For Particpating in the Most Gandu competion and securing the first position. His Ganduness has left a huge impact on the judges and they wish him all the best in his future endeavours. Gand Mara BKL.",
+      "verticalAlign": "middle",
+      "color": "#000000",
+      "fontSize": 24,
+      "fontFamily": "Arial",
+      "fontWeight": "normal",
+      "width": 804.3265796450828,
+      "height": 102.56368130143359,
+      "x": 144.8309402185956,
+      "y": 409.7601587301589,
+      "scaleX": 1,
+      "scaleY": 1
+    },
+    {
+      "id": 1730204773470,
+      "align": "left",
+      "text": "Date : 29th October, 2024",
+      "verticalAlign": "middle",
+      "color": "#000000",
+      "fontSize": 24,
+      "fontFamily": "Arial",
+      "fontWeight": "normal",
+      "width": 312.02042562742884,
+      "height": 49.99999999999996,
+      "x": 143.8307578469229,
+      "y": 530.8369841269831,
+      "scaleX": 1,
+      "scaleY": 1
+    }
+  ],
+  "image": "http://localhost:4000/uploads/1730204899742.png"
+}
