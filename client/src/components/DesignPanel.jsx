@@ -6,6 +6,7 @@ import {
   Image as KonvaImage,
   Transformer,
 } from "react-konva";
+import { v4 } from "uuid";
 
 const FontList = () => {
   const fonts = [
@@ -49,10 +50,19 @@ const FontList = () => {
   );
 };
 
-const DesignPage = () => {
-  const [texts, setTexts] = useState([]); // Store multiple text objects
+const DesignPage = ({
+  texts,
+  setTexts,
+  background,
+  templateId,
+  setTemplateId,
+  setBackground,
+  handleUpload,
+  imageId,
+  setImageId,
+}) => {
   const [image, setImage] = useState(null);
-  const [background, setBackground] = useState(null);
+  const [resetter, setResetter] = useState(true);
   const [textOptions, setTextOptions] = useState({
     text: "Your Text Here",
     color: "#000000",
@@ -72,27 +82,6 @@ const DesignPage = () => {
     width: 0,
     height: 0,
   });
-
-  // Set canvas stage size according to image's aspect ratio
-  useEffect(() => {
-    if (image) {
-      if (image.naturalHeight > image.naturalWidth) {
-        const aspectRatio = 1 / 1.414;
-        const screenHeight = window.innerHeight * (5 / 6);
-        setImageDimensions({
-          width: screenHeight * aspectRatio,
-          height: screenHeight,
-        });
-      } else {
-        const aspectRatio = 2560 / 1810;
-        const screenHeight = window.innerHeight * (5 / 6);
-        setImageDimensions({
-          width: screenHeight * aspectRatio,
-          height: screenHeight,
-        });
-      }
-    }
-  }, [image]);
 
   // Handle text option changes
   const handleChange = (e) => {
@@ -209,37 +198,99 @@ const DesignPage = () => {
     node.scaleX(1);
     node.scaleY(1);
   };
-
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setBackground(file);
-      const image = new Image();
-      image.src = URL.createObjectURL(file);
-      setImage(image); // Assuming setImage is a hook to store the image
+      setBackground(file); // Set the selected file for upload
+      const newImg = new Image();
+      newImg.src = URL.createObjectURL(file);
+      setImage(newImg); // Update display image
     }
   };
 
-  const handleUpload = async (event) => {
-    event.preventDefault(); // Prevent default form submission
-
-    const formData = new FormData();
-    formData.append("texts", JSON.stringify(texts));
-    formData.append("image", background);
-
+  const getTemplate = async () => {
     try {
-      const response = await fetch("http://localhost:4000/design/store", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `http://localhost:4000/design/retrieve/${templateId}`
+      );
 
-      const result = await response.json();
-      alert("Upload Successful");
+      if (response.status !== 200) {
+          alert(`${response.status} : Failed To retrieve the Template`)
+          return;
+      }
+
+      const data = await response.json();
+
+      // Set the texts from the response
+      setTexts(data.texts);
+
+      // Handle the file URL and the image object
+      const file = data.image; // Assuming this is the URL of the image
+      const imageObj = data.imageObj; // The object containing base64 image data
+
+      // If the file URL is available
+      if (file) {
+        const img = new Image();
+        img.src = file; // Set the image source to the file URL
+        img.onload = () => {
+          const url = file.split("/").pop(); // Get the image file name
+          console.log(file);
+        };
+      }
+
+      // If the image object exists
+      if (imageObj) {
+        const { content, type } = imageObj;
+
+        // Convert base64 to Blob
+        const byteCharacters = atob(content); // Decode base64 string
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+
+        // Create a Blob from the byte array
+        const blob = new Blob([byteArray], { type });
+        // Create a File object from the Blob
+        const file = new File([blob], "downloaded-image.png", { type });
+        if (file) {
+          setBackground(file)
+          console.log(file)
+          const image = new Image();
+          image.src = URL.createObjectURL(file);
+          setImage(image); // Assuming setImage is a hook to store the image
+        }
+      }
     } catch (error) {
-      console.error("Error uploading data:", error);
-      alert("Error uploading the Data");
+      console.error("Error retrieving data:", error);
+      alert("Failed To Retrieve");
     }
   };
+
+  // Set canvas stage size according to image's aspect ratio
+  useEffect(() => {
+    if (image) {
+      console.log(image.naturalHeight, image.naturalWidth, "Image Resolution");
+      if (image.naturalHeight > image.naturalWidth) {
+        const aspectRatio = 1 / 1.414;
+        const screenHeight = window.innerHeight * (5 / 6);
+        setImageDimensions({
+          width: screenHeight * aspectRatio,
+          height: screenHeight,
+        });
+      } else if (image.naturalHeight < image.naturalWidth) {
+        const aspectRatio = 2560 / 1810;
+        const screenHeight = window.innerHeight * (5 / 6);
+        setImageDimensions({
+          width: screenHeight * aspectRatio,
+          height: screenHeight,
+        });
+      } else {
+        setResetter(!resetter);
+      }
+    }
+  }, [resetter, image]);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -391,7 +442,6 @@ const DesignPage = () => {
               width={imageDimensions.width}
               height={imageDimensions.height}
             />
-
             {/* Render all added text elements */}
             {texts.map((text) => (
               <Text
@@ -425,12 +475,33 @@ const DesignPage = () => {
             />
           </Layer>
         </Stage>
-        <button
-          onClick={handleUpload}
-          className="w-1/6 my-3 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Save
-        </button>
+        {!image ? (
+          <>
+            <label>Enter Template Id To Import</label>
+            <input
+              type="text"
+              name="templateId"
+              value={templateId}
+              onChange={(e) => {
+                setTemplateId(e.target.value);
+              }}
+              className="w-2/6 p-2 border rounded"
+            />
+            <button
+              onClick={getTemplate}
+              className="w-1/6 my-3 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Import
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={handleUpload}
+            className="w-1/6 my-3 p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Save
+          </button>
+        )}
       </div>
     </div>
   );

@@ -6,8 +6,9 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { csvToJson } = require("./functions/csvToJsonConverter");
 const { generateDataFrame } = require("./functions/generateDataFrame");
-
+const connectToMongo = require("./Database/DB");
 dotenv.config();
+connectToMongo()
 
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
