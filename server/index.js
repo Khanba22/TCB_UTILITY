@@ -47,12 +47,13 @@ app.post("/convert-csv", upload.single("file"), async (req, res) => {
 // Use design route for template handling
 app.use("/design", require("./routes/templateRoute"));
 
+app.use("/certificate", require("./routes/certificateRoute"));
+
 // Root route to check server status
 app.get("/", (req, res) => {
   res.send("Server Active");
 });
 
-app.use("/", require("./routes/image")); // Use the image route at the base URL
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

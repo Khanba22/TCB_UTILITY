@@ -6,7 +6,6 @@ import {
   Image as KonvaImage,
   Transformer,
 } from "react-konva";
-import { v4 } from "uuid";
 
 const FontList = () => {
   const fonts = [
@@ -295,7 +294,7 @@ const DesignPage = ({
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-1/4 p-4 bg-white shadow-lg space-y-4">
+      <div className="w-1/4 h-full overflow-y-scroll p-4 bg-white shadow-lg space-y-4">
         <h2 className="text-lg font-semibold">Text Options</h2>
 
         <label>Background:</label>

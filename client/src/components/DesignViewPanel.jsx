@@ -11,9 +11,9 @@ import { jsPDF } from "jspdf";
 const DesignViewPanel = () => {
   const [texts, setTexts] = useState([]);
   const stageRef = useRef();
-  const [background, setBackground] = useState();
   const transformerRef = useRef();
   const [image, setImage] = useState(null);
+  const [dataId, setDataId] = useState(null);
   const [imageDimensions, setImageDimensions] = useState({
     width: 0,
     height: 0,
@@ -21,11 +21,16 @@ const DesignViewPanel = () => {
 
   const fetchCertificate = async () => {
     try {
-      const response = await fetch("http://localhost:4000/design/retrieve");
+      const response = await fetch(
+        `http://localhost:4000/certificate/retrieve/${dataId}`
+      );
       const data = await response.json();
 
       // Set the texts from the response
       setTexts(data.texts);
+      if (data.id) {
+        setDataId(data.id);
+      }
 
       // Handle the file URL and the image object
       const file = data.image; // Assuming this is the URL of the image
@@ -35,14 +40,7 @@ const DesignViewPanel = () => {
       if (file) {
         const img = new Image();
         img.src = file; // Set the image source to the file URL
-        img.onload = () => {
-          // setImage(img); // Update the image state with the loaded image
-          const url = file.split("/").pop(); // Get the image file name
-          setBackground(url); // Set background to the image name
-          console.log(file);
-        };
       }
-
       // If the image object exists
       if (imageObj) {
         const { content, type } = imageObj;
@@ -60,13 +58,10 @@ const DesignViewPanel = () => {
         // Create a File object from the Blob
         const file = new File([blob], "downloaded-image.png", { type });
         if (file) {
-          setBackground(file);
           const image = new Image();
           image.src = URL.createObjectURL(file);
           setImage(image); // Assuming setImage is a hook to store the image
         }
-        // Optionally, set the File object to a state if needed
-        // setImageFile(fileObj); // Uncomment if you need to store the file object
       }
     } catch (error) {
       console.error("Error retrieving data:", error);
@@ -74,9 +69,9 @@ const DesignViewPanel = () => {
     }
   };
 
-  useEffect(() => {
-    fetchCertificate();
-  }, []);
+  // useEffect(() => {
+  //   fetchCertificate();
+  // }, []);
 
   useEffect(() => {
     if (image) {
@@ -102,7 +97,7 @@ const DesignViewPanel = () => {
       mimeType: "image/png",
       callback: (dataUrl) => {
         pdf.addImage(dataUrl, "PNG", 0, 0, stage.width(), stage.height());
-        pdf.save("certificate.pdf");
+        pdf.save(`${dataId}.pdf`);
       },
     });
   };
@@ -149,7 +144,13 @@ const DesignViewPanel = () => {
           </Layer>
         </Stage>
       </div>
-
+      {!image && (
+        <div className="flex-1 flex justify-center items-center bg-gray-300">
+          <label htmlFor="">Enter Certificate Id</label>
+          <input type="text" onChange={(e)=>{setDataId(e.target.value)}} value={dataId} />
+          <button onClick={fetchCertificate}>Fetch Certificate</button>
+        </div>
+      )}
       <div className="p-4">
         <button
           onClick={downloadPDF}
