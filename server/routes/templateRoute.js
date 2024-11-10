@@ -4,7 +4,6 @@ const { google } = require('googleapis');
 const stream = require('stream');
 const TemplateSchema = require("../Database/Schemas/TemplateSchema");
 const mongoose = require("mongoose");
-const { log } = require("console");
 const router = express.Router();
 
 // Configure Google Drive API
